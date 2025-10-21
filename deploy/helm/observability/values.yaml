@@ -1,0 +1,20 @@
+loki-stack:
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: admin
+    imageRenderer:
+      enabled: true
+    sidecar:
+      dashboards:
+        enabled: true
+  prometheus:
+    enabled: true
+    server:
+      global:
+        scrape_interval: 15s   
+        evaluation_interval: 15s
+  promtail:
+    enabled: false
+  loki:
+    enabled: true

@@ -1,0 +1,1 @@
+helm uninstall observability -n observability

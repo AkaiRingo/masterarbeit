@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  labels:
+    app.kubernetes.io/name: inventory-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: inventory-service
+    app.kubernetes.io/version: "{{ .Values.services.inventory.image.tag }}"
+    app.kubernetes.io/part-of: shop
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inventory-service
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/instance: inventory-service
+        app.kubernetes.io/version: "{{ .Values.services.inventory.image.tag }}"
+        app.kubernetes.io/part-of: shop
+    spec:
+      containers:
+        - name: inventory-service
+          image: "{{ .Values.services.inventory.image.repository }}:{{ .Values.services.inventory.image.tag }}"
+          imagePullPolicy: {{ .Values.services.inventory.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+          env:
+            - name: Serilog__WriteTo__0__Args__uri
+              value: "http://observability-loki.observability.svc.cluster.local:3100"
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: inventorydb-psql-connection
+                  key: connectionString
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 4
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 4

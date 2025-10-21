@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fulfillment-service
+  labels:
+    app.kubernetes.io/name: fulfillment-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: fulfillment-service
+    app.kubernetes.io/version: "{{ .Values.services.order.image.tag }}"
+    app.kubernetes.io/part-of: shop
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fulfillment-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fulfillment-service
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/instance: fulfillment-service
+        app.kubernetes.io/version: "{{ .Values.services.order.image.tag }}"
+        app.kubernetes.io/part-of: shop
+    spec:
+      containers:
+        - name: fulfillment-service
+          image: "{{ .Values.services.fulfillment.image.repository }}:{{ .Values.services.order.image.tag }}"
+          imagePullPolicy: {{ .Values.services.order.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+          env:
+            - name: ServiceUrls__Order
+              value: "http://order-service"
+            - name: ServiceUrls__RabbitMQ__HostName
+              value: "rabbitmq"
+            - name: Serilog__WriteTo__0__Args__uri
+              value: "http://observability-loki.observability.svc.cluster.local:3100"
+            - name: Resilience__Enabled
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 4
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 4
+

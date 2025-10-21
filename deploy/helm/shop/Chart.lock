@@ -1,0 +1,12 @@
+dependencies:
+- name: metrics-server
+  repository: https://kubernetes-sigs.github.io/metrics-server/
+  version: 3.12.1
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.2.5
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.2.5
+digest: sha256:b9d13fcd99c3f16ce22d1be4c840e53c0f2e36ac04173a8ce20112644972a010
+generated: "2025-10-05T08:37:53.461525+02:00"

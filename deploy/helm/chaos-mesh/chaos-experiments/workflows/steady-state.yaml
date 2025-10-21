@@ -1,0 +1,86 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: steady-state
+  namespace: chaos
+spec:
+  entry: the-entry
+  templates:
+    - name: the-entry
+      templateType: Serial
+      deadline: 6m
+      children:
+        - notify-steady-phase-started
+        - steady-phase
+        - notify-steady-phase-complete
+
+    - name: steady-phase
+      templateType: Task
+      task:
+        container:
+          name: k6
+          image: grafana/k6:latest
+          command: [ "k6", "run", "/scripts/test.js" ]
+          env:
+            - name: BASE_URL
+              value: "http://order-service.target.svc.cluster.local"
+            - name: ENDPOINT
+              value: "/orders"
+            - name: PRODUCTS
+              value: "Widget A,Widget B,Widget C"
+            - name: VUS
+              value: "25"
+            - name: DURATION
+              value: "5m"
+            - name: SLEEP_IN_SECONDS
+              value: "1"
+          volumeMounts:
+            - name: k6-steady-state
+              mountPath: /scripts
+              readOnly: true
+        volumes:
+          - name: k6-steady-state
+            configMap:
+              name: k6-steady-state
+
+    - name: notify-steady-phase-started
+      templateType: Task
+      deadline: 3s
+      task:
+        container:
+          name: notify-steady-phase-started
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -f -X POST \
+                -u admin:admin \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "time": '"$(($(date +%s) * 1000))"',
+                  "tags": ["started", "steady-phase"],
+                  "text": "steady-phase started"
+                }' \
+                http://observability-grafana.observability.svc.cluster.local:80/api/annotations
+
+    - name: notify-steady-phase-complete
+      templateType: Task
+      deadline: 3s
+      task:
+        container:
+          name: notify-steady-phase-complete
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -f -X POST \
+                -u admin:admin \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "time": '"$(($(date +%s) * 1000))"',
+                  "tags": ["steady-phase", "completed"],
+                  "text": "steady-phase completed"
+                }' \
+                http://observability-grafana.observability.svc.cluster.local:80/api/annotations

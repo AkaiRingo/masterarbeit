@@ -1,0 +1,68 @@
+resources:
+  limits:
+    cpu: 300m
+    memory: 256Mi
+  requests:
+    cpu: 200m
+    memory: 128Mi
+
+services:
+  order:
+    type: ClusterIP
+    image:
+      repository: order
+      tag: latest
+      pullPolicy: IfNotPresent
+  inventory:
+    type: ClusterIP
+    image:
+      repository: inventory
+      tag: latest
+      pullPolicy: IfNotPresent
+  payment:
+    type: ClusterIP
+    image:
+      repository: payment
+      tag: latest
+      pullPolicy: IfNotPresent
+  fulfillment:
+    type: ClusterIP
+    image:
+      repository: fulfillment
+      tag: latest
+      pullPolicy: IfNotPresent
+
+rabbitmq:
+  image: rabbitmq:3-management
+  port: 5672
+  managementPort: 15672
+  
+metrics-server:
+  serviceMonitor:
+    enabled: true
+  args:
+    - --kubelet-insecure-tls
+
+orderdb:
+  enabled: true
+  image:
+    repository: deaven/postgres
+    tag: 17.6.0
+  auth:
+    postgresPassword: adminpass
+    database: order
+  primary:
+    persistence:
+      enabled: false
+
+inventorydb:
+  enabled: true
+  image:
+    repository: deaven/postgres
+    tag: 17.6.0
+  auth:
+    postgresPassword: adminpass
+    database: inventory
+  primary:
+    persistence:
+      enabled: false

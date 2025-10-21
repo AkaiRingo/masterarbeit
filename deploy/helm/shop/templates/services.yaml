@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  labels:
+    app.kubernetes.io/name: order-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: order-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "{{ .Values.services.order.type }}"
+spec:
+  type: {{ .Values.services.order.type }}
+  selector:
+    app.kubernetes.io/name: order-service
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+  labels:
+    app.kubernetes.io/name: inventory-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: inventory-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "{{ .Values.services.inventory.type }}"
+spec:
+  type: {{ .Values.services.inventory.type }}
+  selector:
+    app.kubernetes.io/name: inventory-service
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  labels:
+    app.kubernetes.io/name: payment-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: payment-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "{{ .Values.services.payment.type }}"
+spec:
+  type: {{ .Values.services.payment.type }}
+  selector:
+    app.kubernetes.io/name: payment-service
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fulfillment-service
+  labels:
+    app.kubernetes.io/name: fulfillment-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/instance: fulfillment-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "{{ .Values.services.fulfillment.type }}"
+spec:
+  type: {{ .Values.services.fulfillment.type }}
+  selector:
+    app.kubernetes.io/name: fulfillment-service
+  ports:
+    - port: 80
+      targetPort: 80

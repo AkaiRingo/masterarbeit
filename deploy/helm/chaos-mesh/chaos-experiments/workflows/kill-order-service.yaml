@@ -1,0 +1,168 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: kill-order-service
+  namespace: chaos
+  annotations:
+    hypothesis: "Der Order-Service soll auch bei Ausfall einzelner Pods funktionsfähig bleiben."
+    identified_risks: |
+      - risk: Pod-Ausfall
+        likelihood: MEDIUM
+        impact: HIGH
+        relevant_slis:
+          - p95_order_response_time_ms
+          - request_error_rate
+        stakeholders:
+          - Team_Name
+          - DevOps
+      - risk: Hohe CPU-Auslastung
+        likelihood: MEDIUM
+        impact: MEDIUM
+        relevant_slis:
+          - cpu_utilization
+          - orders_per_minute
+        stakeholders:
+          - Team_Name
+    expected_outcome: |
+      - type: Throughput
+        sli: "orders_per_minute"
+        slo: ">=1100"
+        aggregation: MEAN
+      - type: ErrorRate
+        sli: "request_error_rate"
+        slo: "<=0.01"
+        aggregation: MAX
+      - type: ResponseTime
+        sli: "p95_order_response_time_ms"
+        slo: "<150"
+        aggregation: MEAN
+spec:
+  entry: the-entry
+  templates:
+    - name: the-entry
+      templateType: Parallel
+      deadline: 11m
+      children:
+        - experiment
+        - monitor
+
+    - name: experiment
+      templateType: Serial
+      children:
+        - chaos-phase
+        - notify-chaos-phase-completed
+
+    - name: chaos-phase
+      templateType: Parallel
+      deadline: 10m
+      children:
+        - notify-chaos-phase-started
+        - steady-phase
+        - pod-kill-schedule
+
+    - name: steady-phase
+      templateType: Task
+      task:
+        container:
+          name: k6
+          image: grafana/k6:latest
+          command: [ "k6", "run", "/scripts/test.js" ]
+          env:
+            - name: BASE_URL
+              value: "http://order-service.target.svc.cluster.local"
+            - name: ENDPOINT
+              value: "/orders"
+            - name: PRODUCTS
+              value: "Widget A,Widget B,Widget C"
+            - name: VUS
+              value: "25"
+            - name: DURATION
+              value: "10m"
+            - name: SLEEP_IN_SECONDS
+              value: "1"
+          volumeMounts:
+            - name: k6-steady-state
+              mountPath: /scripts
+              readOnly: true
+        volumes:
+          - name: k6-steady-state
+            configMap:
+              name: k6-steady-state
+
+    - name: pod-kill-schedule
+      templateType: Schedule
+      schedule:
+        schedule: "@every 30s"
+        concurrencyPolicy: "Forbid"
+        type: PodChaos
+        podChaos:
+          action: pod-kill
+          mode: one
+          duration: "5s"
+          selector:
+            namespaces:
+              - target
+            labelSelectors:
+              app.kubernetes.io/instance: order-service
+
+    - name: monitor
+      templateType: Parallel
+      children:
+        - order-service-health-check
+
+    - name: order-service-health-check
+      templateType: StatusCheck
+      abortWithStatusCheck: false
+      statusCheck:
+        mode: Continuous
+        type: HTTP
+        intervalSeconds: 1
+        timeoutSeconds: 1
+        failureThreshold: 1
+        http:
+          url: "http://order-service.target.svc.cluster.local/health"
+          method: GET
+          criteria:
+            statusCode: "200"
+
+    - name: notify-chaos-phase-started
+      templateType: Task
+      deadline: 3s
+      task:
+        container:
+          name: notify-chaos-phase-started
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -f -X POST \
+                -u admin:admin \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "time": '"$(($(date +%s) * 1000))"',
+                  "tags": ["kill-order-service", "chaos-phase", "started"],
+                  "text": "Experiment started"
+                }' \
+                http://observability-grafana.observability.svc.cluster.local:80/api/annotations
+
+    - name: notify-chaos-phase-completed
+      templateType: Task
+      deadline: 3s
+      task:
+        container:
+          name: notify-chaos-phase-completed
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -f -X POST \
+                -u admin:admin \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "time": '"$(($(date +%s) * 1000))"',
+                  "tags": ["kill-order-service", "chaos-phase", "completed"],
+                  "text": "Experiment completed"
+                }' \
+                http://observability-grafana.observability.svc.cluster.local:80/api/annotations
