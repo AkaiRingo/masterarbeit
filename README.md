@@ -10,10 +10,10 @@ Die Evaluation demonstrierte die Effektivität des Frameworks bei der Aufdeckung
 
 Letztlich validiert diese Arbeit Chaos Engineering als ein wirksames Instrument des proaktiven Risikomanagements. Das entwickelte Framework bietet einen praktischen und reproduzierbaren Ansatz, um verborgene Schwächen empirisch zu identifizieren, das Systemverhalten unter turbulenten Bedingungen zu validieren und handlungsrelevante Erkenntnisse für die Entwicklung resilienterer, produktionsreifer Anwendungen in Kubernetes-Umgebungen abzuleiten.
 
-# Übersicht
+## Übersicht
 Im folgenden sind verschiedene Diagramme dargestellt, die die Architektur und Komponenten des Systems veranschaulichen.
 
-## 📦 Shop - Sequenzdiagramm des Referenzsystems
+### 📦 Shop - Sequenzdiagramm des Referenzsystems
 
 ```mermaid
 sequenceDiagram
@@ -39,7 +39,7 @@ sequenceDiagram
     FulfillmentService->>OrderService: PUT /orders/{id}/status (Completed)
 ```
 
-## Chaos-Mesh Architektur
+### Chaos-Mesh Architektur
 
 ```mermaid
 graph TD
@@ -61,7 +61,7 @@ graph TD
     Daemon -->|Executes Chaos in Target Pods| NetworkChaos
 ```
 
-## Metric-Flow
+### Metric-Flow
 
 ```mermaid
 ---
@@ -91,7 +91,7 @@ flowchart RL
     Service -- "Senden via<br>Serilog (Push)" --> Loki
 ```
 
-## Gesamtarchitektur
+### Gesamtarchitektur
 ```mermaid
 ---
 config:
@@ -133,7 +133,7 @@ flowchart TB
   ChaosMesh -->|metrics| Prometheus
 ```
 
-## RabbitMQ 
+### RabbitMQ
 
 ```mermaid
 graph LR
@@ -157,3 +157,26 @@ graph LR
     Q2 -->|consume orderId| FS
 
 ```
+
+## Vorraussetzungen
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/) <br> `scoop install kubectl` <br> `brew install kubectl`
+- [minikube](https://minikube.sigs.k8s.io/docs/) <br> `scoop install minikube` <br> `brew install minikube`
+- [helm](https://helm.sh/) <br> `scoop install helm` <br> `brew install helm`
+- [Docker](https://www.docker.com/) <br> `scoop install docker` <br> `brew install --cask docker`
+- Optional aber empfohlen: <br> [k9s](https://k9scli.io/) <br> `scoop install k9s` <br> `brew install k9s`
+
+## Installation
+Für die Installation des "Frameworks" führen Sie bitte die gekenntzeichnenten Schritte 1 bis 8 unter `scripts/` aus.
+
+## Aufräumen
+Zum Entfernen aller Ressourcen und Löschen des Minikube-Clusters führen Sie bitte das Skript `scripts/delete-minikube-cluster.sh` aus.
+
+Um nur einzelne Komponenten zu entfernen, nutzen Sie die entsprechenden `uninstall-*.sh` Skripte im `scripts/` Verzeichnis.
+
+## Chaos
+Das Framework nutzt [Chaos Mesh](https://chaos-mesh.org/) zur Durchführung von Chaos-Experimenten. Weitere Informationen zur Nutzung und Konfiguration von Chaos Mesh finden Sie in der [offiziellen Dokumentation](https://chaos-mesh.org/docs/).
+
+Um ein Chaos-Experiment zu erstellen, können Sie die bereitgestellten YAML-Dateien im `deploy/helm/chaos-mesh/chaos-experiments/workflows` Verzeichnis verwenden oder anpassen.
+
+Um ein Chaos-Experiment auszuführen, wenden Sie die entsprechende YAML-Datei mit `kubectl apply -f <datei>.yaml` an.
+Für die Ausführung wurden unter `scripts/chaos-experiments` Hilfsskripte bereitgestellt.

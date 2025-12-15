@@ -32,14 +32,14 @@ if kubectl get ns target &>/dev/null; then
   port_forward target inventory-service     8082 80  "Inventory Service"     true
   port_forward target payment-service       8083 80  "Payment Service"       true
   port_forward target rabbitmq              5672 5672 "RabbitMQ AMQP"         false
-  port_forward target rabbitmq             15672 15672 "RabbitMQ UI"           false
+  port_forward target rabbitmq             15672 15672 "RabbitMQ UI (User: guest, Password: guest)"           false
 fi
 
 # --- Observability ---
 if kubectl get ns observability &>/dev/null; then
   echo ""
   echo "➡️  Telemetry:"
-  port_forward observability observability-grafana           3000 80 "Grafana"          false
+  port_forward observability observability-grafana           3000 80 "Grafana (User: admin, Password: admin)"          false
   port_forward observability observability-prometheus-server  9090 80 "Prometheus"       false
 fi
 
